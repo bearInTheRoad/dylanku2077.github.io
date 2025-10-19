@@ -6,7 +6,7 @@ import { defineConfig } from 'astro/config';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://bearintheroad.github.io'
-  base: '/dylanku2077.github.io'
+  site: 'https://bearintheroad.github.io',
+  base: '/dylanku2077.github.io',
 	integrations: [mdx(), sitemap()],
 });
