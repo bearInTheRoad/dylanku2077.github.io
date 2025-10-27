@@ -1,0 +1,75 @@
+---
+title: 'Include(CTF) - TryHackMe Writeup'
+description: 'This is a writeup about my experience
+for the Include CTF on TryHackMe platform'
+pubDate: 'Oct 27 2024'
+heroImage: '../../assets/TryHackMe.jpg'
+---
+
+## Include(CTF) - TryHackMe Writeup
+Room Link: https://tryhackme.com/room/include
+
+# Reconnaissance
+No doubt we always start with Reconnaissance. Let'start with
+Port Scanning and see what's the open port on this target host.
+
+Nmaps gives the following results with a quick scan.
+```shell
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-10-19 15:04 CST
+Nmap scan report for 10.201.13.4
+Host is up (0.29s latency).
+Not shown: 992 closed tcp ports (reset)
+PORT      STATE SERVICE
+22/tcp    open  ssh
+25/tcp    open  smtp
+110/tcp   open  pop3
+143/tcp   open  imap
+993/tcp   open  imaps
+995/tcp   open  pop3s
+4000/tcp  open  remoteanything
+50000/tcp open  ibm-db2
+
+Nmap done: 1 IP address (1 host up) scanned in 1.87 seconds
+```
+
+Things worth noting
+1. They have Port 22 open, this may be a chance for brute force
+on weak passwords.
+2. They have the whole smtp, pop3, imap service. That means the
+website supports mail service.
+3. Remonteanything is a service for remote desktop. There are
+some interesting CVEs about it.
+4. ibm-db2 is a database service from IBM. Why is there a database
+service directly open to port scanning? It may be supporting some
+web service.
+
+
+Next thing, let's send a simple get request to all this ports and
+see if anyone of them providing a website UI.
+You will soon find that Port 4000 and Port 50000, each of them has
+a website UI. But I didn't go thru all of them at first. After I found
+out Port 4000 has a frontend interface, I jumped right into that
+rabbithole and completely forgot Port 50000.
+
+
+
+Next step we go to do a little subdomain exploratory. I used
+a very long subdomain list ![here]() along with a self write single
+thread script. The enumerating didn't finish before the machine auto 
+shut down after 2 hours. I should have used a shorter payload list with
+more frequently used subdomain as first recon tool. Also, I could have
+used some existing tools with multi-thread - or develolp my own multi-thread
+script.
+
+The subdomain enumeratation with about 1/3 of the whole list gave me the
+following avaialbe subdomains.
+```shell
+/images               (Status: 301) [Size: 179] [--> /images/]
+/signup               (Status: 500) [Size: 1246]
+/fonts                (Status: 301) [Size: 177] [--> /fonts/]
+/signin               (Status: 200) [Size: 1295]
+/index                (Status: 302) [Size: 29] [--> /signin]
+```
+
+Seems like nothing out of ordinary, hence I just started looking at the
+actual web pages and their source codes.
