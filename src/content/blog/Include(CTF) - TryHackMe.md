@@ -115,7 +115,7 @@ lesson that we should keep notes when doing CTF.
 Jump to the part where I finally realizse (cheated by reading other writeups)
 that I can go to port 50000 for Sysmon. Surely successfully login.
 
-That's where I get the first flag.
+That's where I get the first flag, on the left of the screen.
 ![First Flag](../../assets/Include-first-flag.png)
 
 I read the source code of the page a while longer and I found that the profile
