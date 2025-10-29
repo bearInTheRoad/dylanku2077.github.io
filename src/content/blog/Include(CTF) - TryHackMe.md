@@ -3,10 +3,9 @@ title: 'Include(CTF) - TryHackMe Writeup'
 description: 'This is a writeup about my experience
 for the Include CTF on TryHackMe platform'
 pubDate: 'Oct 27 2024'
-heroImage: '../../assets/TryHackMe.jpg'
+heroImage: '../../assets/TryHackMe.png'
 ---
 
-## Include(CTF) - TryHackMe Writeup
 Room Link: https://tryhackme.com/room/include
 
 # Reconnaissance
@@ -57,7 +56,7 @@ rabbithole and completely forgot Port 50000.
 
 
 Next step I did a little subdomain exploratory. I used
-a very long subdomain list ![here]() along with a self write single
+a very long subdomain list along with a self write single
 thread script. The enumerating didn't finish before the machine auto 
 shut down after 2 hours. I should have used a shorter payload list with
 more frequently used subdomain as first recon tool. Also, I could have
@@ -74,22 +73,26 @@ following avaialbe subdomains.
 /index                (Status: 302) [Size: 29] [--> /signin]
 ```
 
-Seems like nothing out of ordinary, hence I just started looking at the
-actual web pages and their source codes.
+Seems like nothing out of ordinary, hence I just started looking at the actual web pages and their source codes.
 
+# Penetration
 I spend a little time trying to guess what possible account and password
 they will use for port 4000, but then I find the aha moment - it's directly
 written in the login title. guest/guest. In fact, I even start to find CVEs
 for the remoteanything service.
+![Review App Login](../../assets/Include-review-login.png)
 
 Once I entered the index page of this so-called Review app, I very soon
 feel so familiar with the UI style - this is literally the same as the
 previous rooms where prototype pollution is introduced.
 
 You will certainly find proof in you own profile.
+![Prototype Pollution](../../assets/Include-self-profile.png)
 
 Then it becomes automatic - change the `isAdmin` value to true, so
 that you will be able to see the extra tabs in your own profile page.
+
+![API and Settings Tab](../../assets/Include-api-setting-tab.png)
 
 If you click into the tabs that newly showed up after you become admin,
 you will find that the API ones is telling you that there is some internal
@@ -99,8 +102,8 @@ to be initiated from the hosting machine itself.
 And in setting tab, they provide an entry for you to set your own profile,
 in URL format.
 
-I mean that's a big enough hint. Just paste whatever API endpoint you get
-into that profile input and you will see the return, encoded in Base64.
+I mean that's a big enough hint. Just paste whatever API endpoint you get into that profile input and you will see the return, encoded in Base64.
+![SSRF](../../assets/Include-SSRF.png)
 
 Cyberchef come to rescue without doubt and you get the account and password
 for the Sysmon app.
@@ -113,10 +116,12 @@ Jump to the part where I finally realizse (cheated by reading other writeups)
 that I can go to port 50000 for Sysmon. Surely successfully login.
 
 That's where I get the first flag.
+![First Flag](../../assets/Include-first-flag.png)
 
 I read the source code of the page a while longer and I found that the profile
 picture link is definitely the weak link. I should be able to do a LFI attack 
 becasue the way the link is organised in code.
+![LFI](../../assets/Include-sysmon-LFI.png)
 
 However, lost patience to dig even deeper. I just continue reading the writeups 
 and get how to crack the second question. 
