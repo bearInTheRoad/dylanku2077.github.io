@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MBTI Personality Test</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: #1a1613;
+    color: #e8e4df;
+    font-family: 'Newsreader', Georgia, serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  #app {
+    max-width: 640px;
+    width: 100%;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .fade-out { opacity: 0; transform: translateY(12px); }
+  .fade-in { opacity: 1; transform: translateY(0); }
+
+  .mono { font-family: 'DM Mono', monospace; }
+  .label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: #6b6560;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  h1.intro-title {
+    font-size: 48px;
+    font-weight: 300;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .intro-desc {
+    font-size: 17px;
+    line-height: 1.7;
+    color: #9e9590;
+    max-width: 460px;
+    margin: 0 auto 48px;
+    font-weight: 300;
+    text-align: center;
+  }
+  .btn-begin, .btn-retake {
+    display: inline-block;
+    background: transparent;
+    border: 1px solid #4a4035;
+    color: #c9a87c;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 16px 48px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-begin:hover { border-color: #c9a87c; background: rgba(201,168,124,0.06); }
+  .btn-retake {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    padding: 12px 32px;
+    border-color: #2a2520;
+    color: #6b6560;
+  }
+  .btn-retake:hover { border-color: #4a4035; color: #c9a87c; }
+
+  .progress-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 48px;
+  }
+  .progress-counter {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: #6b6560;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+  .progress-track {
+    flex: 1;
+    height: 1px;
+    background: #2a2520;
+    position: relative;
+  }
+  .progress-fill {
+    position: absolute;
+    left: 0; top: 0; height: 1px;
+    background: #c9a87c;
+    transition: width 0.4s ease;
+  }
+
+  .choice-btn {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: 1px solid #2a2520;
+    color: #e8e4df;
+    font-family: 'Newsreader', Georgia, serif;
+    font-size: 17px;
+    line-height: 1.65;
+    font-weight: 300;
+    padding: 24px 28px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 16px;
+  }
+  .choice-btn:last-child { margin-bottom: 0; }
+  .choice-btn:hover {
+    border-color: #4a4035;
+    background: rgba(201,168,124,0.04);
+  }
+
+  h1.result-type {
+    font-size: 72px;
+    font-weight: 300;
+    text-align: center;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    color: #c9a87c;
+  }
+  .result-title {
+    text-align: center;
+    font-size: 20px;
+    font-style: italic;
+    color: #9e9590;
+    margin-bottom: 48px;
+    font-weight: 300;
+  }
+  .result-desc {
+    font-size: 17px;
+    line-height: 1.75;
+    color: #c8c3be;
+    margin-bottom: 48px;
+    font-weight: 300;
+  }
+  .dim-section {
+    border-top: 1px solid #2a2520;
+    padding-top: 36px;
+    margin-bottom: 48px;
+  }
+  .dim-section .label { text-align: left; margin-bottom: 28px; }
+  .dim-row { margin-bottom: 28px; }
+  .dim-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+  .dim-track {
+    height: 6px;
+    background: #2a2520;
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+  .dim-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, #c9a87c, #a6845a);
+    border-radius: 3px;
+    transition: width 1s ease;
+  }
+  .center-wrap { text-align: center; }
+
+  @media (max-width: 500px) {
+    h1.intro-title { font-size: 36px; }
+    h1.result-type { font-size: 56px; }
+    .choice-btn { font-size: 15px; padding: 20px 22px; }
+  }
+</style>
+</head>
+<body>
+<div id="app" class="fade-in"></div>
+
+<script>
+const questions = [
+  {dim:"EI",a:"A room full of strangers energizes you — each one holds a conversation you haven't had yet.",b:"A room full of strangers drains you — you'd rather go deep with one person than wide with twenty.",aDir:"E",bDir:"I"},
+  {dim:"EI",a:"You think by talking. The words find their shape as they leave your mouth.",b:"You think by withdrawing. The words must settle internally before they're ready to be spoken.",aDir:"E",bDir:"I"},
+  {dim:"EI",a:"Silence in a group makes you want to fill it.",b:"Silence in a group feels like a shared understanding.",aDir:"E",bDir:"I"},
+  {dim:"EI",a:"After a long project, you recharge by going out with people.",b:"After a long project, you recharge by being alone with your thoughts.",aDir:"E",bDir:"I"},
+  {dim:"EI",a:"You prefer to work through problems out loud with others.",b:"You prefer to work through problems on paper or in your head first.",aDir:"E",bDir:"I"},
+  {dim:"EI",a:"Your social circle is wide — many acquaintances, open borders.",b:"Your social circle is narrow — few people, but each bond runs deep.",aDir:"E",bDir:"I"},
+  {dim:"SN",a:"You trust what you can verify — data, experience, what has already happened.",b:"You trust what you can infer — patterns, possibilities, what could happen.",aDir:"S",bDir:"N"},
+  {dim:"SN",a:"When reading, you focus on what the author said.",b:"When reading, you focus on what the author meant.",aDir:"S",bDir:"N"},
+  {dim:"SN",a:"You'd rather master existing tools than invent new ones.",b:"You'd rather invent new tools than master existing ones.",aDir:"S",bDir:"N"},
+  {dim:"SN",a:"Details come first — the big picture assembles itself from the parts.",b:"The big picture comes first — the details fill in once the structure is clear.",aDir:"S",bDir:"N"},
+  {dim:"SN",a:"You remember events by what happened — facts, sequences, specifics.",b:"You remember events by what they felt like — impressions, connections, significance.",aDir:"S",bDir:"N"},
+  {dim:"SN",a:"You prefer instructions that are concrete and step-by-step.",b:"You prefer instructions that give you the goal and let you find the path.",aDir:"S",bDir:"N"},
+  {dim:"TF",a:"A decision is good if it is logically sound, even if someone's feelings get bruised.",b:"A decision is good if it accounts for how people will be affected, even if the logic bends.",aDir:"T",bDir:"F"},
+  {dim:"TF",a:"When a friend makes a mistake, your instinct is to help them see the error clearly.",b:"When a friend makes a mistake, your instinct is to make sure they feel supported first.",aDir:"T",bDir:"F"},
+  {dim:"TF",a:"You respect people who are competent and direct, even if they lack warmth.",b:"You respect people who are kind and empathetic, even if they lack precision.",aDir:"T",bDir:"F"},
+  {dim:"TF",a:"In an argument, you care more about what is true.",b:"In an argument, you care more about what is fair.",aDir:"T",bDir:"F"},
+  {dim:"TF",a:"Criticism sharpens — you prefer honest feedback over comfortable reassurance.",b:"Encouragement fuels — you perform better when people believe in you.",aDir:"T",bDir:"F"},
+  {dim:"TF",a:"You find it easier to identify flaws in an argument than to read the mood of a room.",b:"You find it easier to read the mood of a room than to identify flaws in an argument.",aDir:"T",bDir:"F"},
+  {dim:"JP",a:"An open calendar unsettles you — you'd rather have a plan than possibility.",b:"A packed calendar unsettles you — you'd rather have freedom than structure.",aDir:"J",bDir:"P"},
+  {dim:"JP",a:"You finish tasks well before the deadline. The weight of incompletion disturbs you.",b:"You finish tasks near the deadline. The pressure of the final hour sharpens you.",aDir:"J",bDir:"P"},
+  {dim:"JP",a:"Once you make a decision, you commit. Revisiting it feels like regression.",b:"Once you make a decision, you stay open. New information might change everything.",aDir:"J",bDir:"P"},
+  {dim:"JP",a:"You prefer to settle things — ambiguity is a problem to resolve.",b:"You prefer to keep things open — closure can be premature.",aDir:"J",bDir:"P"},
+  {dim:"JP",a:"Your workspace tends toward order. Chaos is friction.",b:"Your workspace tends toward organized chaos. Too much order is sterile.",aDir:"J",bDir:"P"},
+  {dim:"JP",a:"When traveling, you plan the itinerary before arriving.",b:"When traveling, you decide what to do once you're there.",aDir:"J",bDir:"P"},
+];
+
+const typeDescriptions = {
+  INTJ:{title:"The Architect",desc:"You build systems in your head before the world catches up. Strategy is not a skill for you — it is a reflex. You see the long arc of things, and you have little patience for those who cannot. Independence is not a preference; it is a requirement. You trust your internal model of the world more than consensus, and you are usually right to do so."},
+  INTP:{title:"The Logician",desc:"You live inside frameworks. Every idea is a structure to be stress-tested, every assumption a load-bearing wall that might be hollow. You pursue understanding not for utility but because the gaps in your model bother you the way a misaligned pixel bothers a designer. People sometimes mistake your detachment for coldness. It is not coldness — it is focus."},
+  ENTJ:{title:"The Commander",desc:"You see inefficiency and your body moves before your mind grants permission. Leadership is not something you aspire to — it is something that happens when you enter a room where no one has a plan. You think in objectives, timelines, and leverage. The world is a system, and systems can be optimized."},
+  ENTP:{title:"The Debater",desc:"You argue not to win but to discover. Every position is provisional, every certainty an invitation to probe. Your mind moves laterally — while others dig deeper into one hole, you have already opened three more. You thrive in novelty and suffocate in routine. The worst punishment anyone could inflict on you is a solved problem."},
+  INFJ:{title:"The Advocate",desc:"You perceive patterns in human behavior that others miss entirely. Your intuition operates like sonar — pinging beneath the surface of what people say to detect what they mean. You carry a vision of how things should be, and the distance between that vision and reality is a wound that never fully heals. You give more than you receive, and you know it."},
+  INFP:{title:"The Mediator",desc:"You inhabit a rich internal world that the external one rarely matches. Your values are not principles you chose — they are structures you discovered inside yourself, non-negotiable and load-bearing. You feel the weight of inauthenticity like a physical sensation. You would rather fail on your own terms than succeed on borrowed ones."},
+  ENFJ:{title:"The Protagonist",desc:"You read people the way engineers read schematics — the structure is visible to you, the stress points obvious. You organize human energy the way others organize data. Your gift is making people feel seen; your burden is that you rarely feel seen yourself. You lead through conviction, and conviction through empathy."},
+  ENFP:{title:"The Campaigner",desc:"You see potential everywhere — in people, in ideas, in half-formed plans that others dismiss. Your enthusiasm is not performance; it is the natural output of a mind that genuinely believes things can be better. You connect dots across domains that others keep separate. Your challenge is not starting — it is finishing."},
+  ISTJ:{title:"The Logistician",desc:"You are the bedrock others build on without noticing. Duty is not a burden for you — it is the structure that gives life its shape. You trust what has been tested, respect what has endured, and distrust what promises revolution. Your memory for detail is formidable, and your standards do not bend."},
+  ISFJ:{title:"The Defender",desc:"You remember what others forget — the small commitments, the unspoken needs, the quiet promises that hold relationships together. Your care operates in the background, invisible until it stops. You do not seek recognition for your contributions, which is precisely why you deserve it."},
+  ESTJ:{title:"The Executive",desc:"You see disorder and impose structure. Not because you enjoy control, but because someone must, and you are the one who will. Rules exist for reasons. Institutions function because people like you maintain them. Your directness can sting, but no one doubts where you stand."},
+  ESFJ:{title:"The Consul",desc:"You hold groups together through attention — to needs, to traditions, to the invisible threads of social cohesion that most people take for granted. Harmony is not a luxury for you; it is infrastructure. When it breaks, you feel it in your body before your mind names it."},
+  ISTP:{title:"The Virtuoso",desc:"You understand systems by taking them apart. Theory bores you unless it touches something you can build, fix, or break. Your hands think faster than your words, and your calm under pressure is not an act — it is the natural state of someone who trusts their own competence. You move through crises the way water moves through rock."},
+  ISFP:{title:"The Adventurer",desc:"You live closer to the present than most. Sensation, texture, beauty — these are not decorations on top of life but the substance of it. Your values run deep but you rarely preach them. You express what matters through action, through creation, through the quiet choices that accumulate into a life that looks like you."},
+  ESTP:{title:"The Entrepreneur",desc:"You read rooms and situations the way traders read markets — fast, instinctive, already positioning for the next move before others have finished analyzing the last one. You learn by doing, not by studying. Risk does not frighten you; stagnation does."},
+  ESFP:{title:"The Entertainer",desc:"You make the present tense feel like the only tense that matters. Your energy is not performance — it is overflow. You notice what people need in the moment and you deliver it without hesitation. The world is a stage not because you act, but because you are fully alive on it."},
+};
+
+let current = 0;
+let answers = {};
+let phase = "intro";
+const app = document.getElementById("app");
+
+function transition(fn) {
+  app.classList.remove("fade-in");
+  app.classList.add("fade-out");
+  setTimeout(() => { fn(); app.classList.remove("fade-out"); app.classList.add("fade-in"); }, 300);
+}
+
+function renderIntro() {
+  app.innerHTML = `
+    <div style="text-align:center">
+      <div class="label">Personality Instrument</div>
+      <h1 class="intro-title">Myers–Briggs<br>Type Indicator</h1>
+      <p class="intro-desc">Twenty-four forced choices. Each pair presents two modes of operating in the world. Neither is superior. Pick the one that describes your default — not who you wish to be, but who you are when no one is watching.</p>
+      <button class="btn-begin" id="beginBtn">Begin</button>
+    </div>`;
+  document.getElementById("beginBtn").addEventListener("click", () => {
+    transition(() => { phase = "test"; renderQuestion(); });
+  });
+}
+
+function renderQuestion() {
+  const q = questions[current];
+  const progress = (current / questions.length) * 100;
+  app.innerHTML = `
+    <div class="progress-bar">
+      <span class="progress-counter">${String(current+1).padStart(2,"0")} / ${questions.length}</span>
+      <div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div>
+    </div>
+    <div>
+      <button class="choice-btn" id="choiceA">${q.a}</button>
+      <button class="choice-btn" id="choiceB">${q.b}</button>
+    </div>`;
+  document.getElementById("choiceA").addEventListener("click", () => handleAnswer("a"));
+  document.getElementById("choiceB").addEventListener("click", () => handleAnswer("b"));
+}
+
+function handleAnswer(choice) {
+  const q = questions[current];
+  answers[current] = choice === "a" ? q.aDir : q.bDir;
+  if (current < questions.length - 1) {
+    transition(() => { current++; renderQuestion(); });
+  } else {
+    const tally = {E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
+    Object.values(answers).forEach(d => tally[d]++);
+    const type = (tally.E>=tally.I?"E":"I")+(tally.S>=tally.N?"S":"N")+(tally.T>=tally.F?"T":"F")+(tally.J>=tally.P?"J":"P");
+    transition(() => { phase = "result"; renderResult(type, tally); });
+  }
+}
+
+function dimBar(left, right, leftScore, rightScore) {
+  const total = leftScore + rightScore;
+  const pct = total > 0 ? Math.round((leftScore/total)*100) : 50;
+  return `
+    <div class="dim-row">
+      <div class="dim-labels">
+        <span style="color:${pct>=50?"#e8e4df":"#6b6560"}">${left} ${pct}%</span>
+        <span style="color:${pct<50?"#e8e4df":"#6b6560"}">${right} ${100-pct}%</span>
+      </div>
+      <div class="dim-track"><div class="dim-fill" style="width:${pct}%"></div></div>
+    </div>`;
+}
+
+function renderResult(type, scores) {
+  const info = typeDescriptions[type];
+  app.innerHTML = `
+    <div class="label" style="margin-bottom:16px">Your Type</div>
+    <h1 class="result-type">${type}</h1>
+    <div class="result-title">${info.title}</div>
+    <p class="result-desc">${info.desc}</p>
+    <div class="dim-section">
+      <div class="label" style="text-align:left;margin-bottom:28px">Dimension Breakdown</div>
+      ${dimBar("E","I",scores.E,scores.I)}
+      ${dimBar("S","N",scores.S,scores.N)}
+      ${dimBar("T","F",scores.T,scores.F)}
+      ${dimBar("J","P",scores.J,scores.P)}
+    </div>
+    <div class="center-wrap"><button class="btn-retake" id="retakeBtn">Retake</button></div>`;
+  document.getElementById("retakeBtn").addEventListener("click", () => {
+    transition(() => { current=0; answers={}; phase="intro"; renderIntro(); });
+  });
+}
+
+renderIntro();
+</script>
+</body>
+</html>
