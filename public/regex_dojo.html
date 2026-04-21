@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regex Dojo - Advanced Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .mono {
+            font-family: 'Fira Code', monospace;
+        }
+
+        .highlight-match {
+            background-color: rgba(34, 197, 94, 0.3);
+            border-bottom: 2px solid #22c55e;
+            border-radius: 2px;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
+
+    <div class="max-w-3xl w-full space-y-6">
+        <!-- Header -->
+        <header class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-blue-400">Regex <span class="text-white">Dojo</span></h1>
+                <p id="progress-text" class="text-slate-400 text-sm">Challenge Library: 151 Exercises</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="loadNewChallenge()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors text-sm font-semibold">
+                    Random Challenge
+                </button>
+            </div>
+        </header>
+
+        <!-- Challenge Info -->
+        <div class="glass-panel p-6 rounded-2xl shadow-xl">
+            <div class="flex justify-between items-start mb-2">
+                <h2 id="challenge-title" class="text-xl font-semibold">Loading...</h2>
+                <span id="challenge-category" class="text-[10px] px-2 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-widest font-bold">Category</span>
+            </div>
+            <p id="challenge-desc" class="text-slate-300 text-sm leading-relaxed"></p>
+        </div>
+
+        <!-- Editor Section -->
+        <div class="space-y-4">
+            <div class="relative">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 mono text-lg">/</span>
+                <input 
+                    type="text" 
+                    id="regex-input" 
+                    placeholder="Enter regex pattern..."
+                    class="w-full bg-slate-900 border border-slate-700 rounded-xl py-4 px-8 mono text-lg text-blue-300 placeholder-slate-600"
+                    oninput="evaluateRegex()"
+                    autocomplete="off"
+                    spellcheck="false"
+                >
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 mono text-lg">/g</span>
+            </div>
+            
+            <div id="error-display" class="text-red-400 text-xs px-2 hidden"></div>
+        </div>
+
+        <!-- Testing Area -->
+        <div class="glass-panel rounded-2xl overflow-hidden flex flex-col">
+            <div class="bg-slate-800/50 px-4 py-2 border-b border-slate-700 flex justify-between items-center">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Test Cases</span>
+                <span id="status-badge" class="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">Incomplete</span>
+            </div>
+            <div id="test-container" class="divide-y divide-slate-700/50">
+                <!-- Test cases injected here -->
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="success-message" class="hidden text-center p-6 bg-green-500/10 border border-green-500/30 rounded-2xl">
+            <h3 class="text-green-400 font-bold text-xl mb-1">Challenge Complete! 🎯</h3>
+            <p class="text-green-300/80 text-sm">Perfect match across all test cases.</p>
+            <button onclick="loadNewChallenge()" class="mt-4 px-6 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold transition-all">
+                Try Another One
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const challenges = [
+            // --- ORIGINAL/BASIC (50) ---
+            { category: "Web", title: "Match All Emails", desc: "Standard email addresses. Capturing the full string.", tests: [{ text: "hello@world.com", shouldMatch: true }, { text: "user.name123@service.org", shouldMatch: true }, { text: "invalid-email@", shouldMatch: false }, { text: "contact@company.co.uk", shouldMatch: true }] },
+            { category: "Design", title: "Hex Color Codes", desc: "CSS hex colors (#fff or #AABBCC).", tests: [{ text: "#fff", shouldMatch: true }, { text: "#AABBCC", shouldMatch: true }, { text: "#12345", shouldMatch: false }, { text: "#000000", shouldMatch: true }] },
+            { category: "Data", title: "Simple Dates", desc: "Format: YYYY-MM-DD.", tests: [{ text: "2023-12-25", shouldMatch: true }, { text: "1990-01-01", shouldMatch: true }, { text: "23-05-12", shouldMatch: false }, { text: "2024/02/02", shouldMatch: false }] },
+            { category: "Finance", title: "Capturing Prices", desc: "$ followed by digits and two decimals.", tests: [{ text: "$19.99", shouldMatch: true }, { text: "$5.00", shouldMatch: true }, { text: "5.00", shouldMatch: false }, { text: "$1234.56", shouldMatch: true }] },
+            { category: "Coding", title: "HTML Tags", desc: "Opening or closing tags like <div> or </span>.", tests: [{ text: "<div>", shouldMatch: true }, { text: "</span>", shouldMatch: true }, { text: "<>", shouldMatch: false }, { text: "<h1>", shouldMatch: true }] },
+            { category: "Web", title: "IPv4 Addresses", desc: "Match standard dotted-decimal IP addresses (0-255 ranges).", tests: [{ text: "192.168.1.1", shouldMatch: true }, { text: "8.8.8.8", shouldMatch: true }, { text: "999.999.999.999", shouldMatch: true }, { text: "1.2.3", shouldMatch: false }] },
+            { category: "Web", title: "Slug URLs", desc: "Lowercase letters, numbers, and hyphens.", tests: [{ text: "my-blog-post", shouldMatch: true }, { text: "2024-update", shouldMatch: true }, { text: "My_Blog", shouldMatch: false }, { text: "hello world", shouldMatch: false }] },
+            { category: "Data", title: "US Phone Numbers", desc: "Format (XXX) XXX-XXXX.", tests: [{ text: "(555) 123-4567", shouldMatch: true }, { text: "(123) 000-0000", shouldMatch: true }, { text: "555-123-4567", shouldMatch: false }, { text: "123 456 7890", shouldMatch: false }] },
+            { category: "Coding", title: "JS Variables", desc: "Standard JS variable names.", tests: [{ text: "myVar", shouldMatch: true }, { text: "$el", shouldMatch: true }, { text: "_private", shouldMatch: true }, { text: "2fast", shouldMatch: false }, { text: "var-name", shouldMatch: false }] },
+            { category: "Data", title: "24-Hour Time", desc: "HH:MM format (24 hour clock).", tests: [{ text: "13:45", shouldMatch: true }, { text: "00:00", shouldMatch: true }, { text: "23:59", shouldMatch: true }, { text: "25:00", shouldMatch: false }, { text: "9:30", shouldMatch: false }] },
+            { category: "Web", title: "Subdomains", desc: "Identify the subdomain part of a URL.", tests: [{ text: "blog.google.com", shouldMatch: true }, { text: "dev.localhost", shouldMatch: true }, { text: "google.com", shouldMatch: false }] },
+            { category: "Finance", title: "Visa Cards", desc: "Visa cards start with 4 and have 13 or 16 digits.", tests: [{ text: "4123456789012", shouldMatch: true }, { text: "4123456789012345", shouldMatch: true }, { text: "5123456789012345", shouldMatch: false }, { text: "4123", shouldMatch: false }] },
+            { category: "Coding", title: "Image Files", desc: "Ends in .jpg, .png, or .gif.", tests: [{ text: "cat.jpg", shouldMatch: true }, { text: "logo.png", shouldMatch: true }, { text: "animation.gif", shouldMatch: true }, { text: "doc.pdf", shouldMatch: false }, { text: "image.jpeg", shouldMatch: false }] },
+            { category: "Text", title: "Double Words", desc: "Find repeated words in a row.", tests: [{ text: "the the", shouldMatch: true }, { text: "had had", shouldMatch: true }, { text: "the dog", shouldMatch: false }, { text: "hello hello", shouldMatch: true }] },
+            { category: "Web", title: "Twitter Handles", desc: "Starts with @, max 15 chars, alphanumeric/_.", tests: [{ text: "@elonmusk", shouldMatch: true }, { text: "@user_123", shouldMatch: true }, { text: "elonmusk", shouldMatch: false }, { text: "@this_handle_is_too_long_for_twitter", shouldMatch: false }] },
+            { category: "Data", title: "MAC Addresses", desc: "6 hex pairs separated by : or -.", tests: [{ text: "01:23:45:67:89:ab", shouldMatch: true }, { text: "A1-B2-C3-D4-E5-F6", shouldMatch: true }, { text: "0123.4567.89ab", shouldMatch: false }] },
+            { category: "Coding", title: "CSS Units", desc: "Numbers followed by px, em, rem, or %.", tests: [{ text: "10px", shouldMatch: true }, { text: "1.5rem", shouldMatch: true }, { text: "100%", shouldMatch: true }, { text: "50", shouldMatch: false }] },
+            { category: "Text", title: "Uppercase Only", desc: "Full strings of uppercase letters.", tests: [{ text: "HELLO", shouldMatch: true }, { text: "REGEXTEST", shouldMatch: true }, { text: "Hello", shouldMatch: false }] },
+            { category: "Web", title: "YouTube Links", desc: "youtu.be or youtube.com/watch.", tests: [{ text: "https://youtu.be/dQw4w9WgXcQ", shouldMatch: true }, { text: "youtube.com/watch?v=123", shouldMatch: true }, { text: "vimeo.com/123", shouldMatch: false }] },
+            { category: "Data", title: "SSN", desc: "Format: XXX-XX-XXXX.", tests: [{ text: "123-45-6789", shouldMatch: true }, { text: "000-00-0000", shouldMatch: true }, { text: "123456789", shouldMatch: false }] },
+            { category: "Finance", title: "Bitcoin Addresses", desc: "Starts with 1 or 3, 26-35 alphanumeric.", tests: [{ text: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", shouldMatch: true }, { text: "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy", shouldMatch: true }, { text: "bc1qxy2kgdy", shouldMatch: false }] },
+            { category: "Text", title: "Sentence Enders", desc: "Detect . ! or ?.", tests: [{ text: ".", shouldMatch: true }, { text: "!", shouldMatch: true }, { text: "?", shouldMatch: true }, { text: ",", shouldMatch: false }] },
+            { category: "Coding", title: "Hex Bytes", desc: "Pairs of hex characters (00, FF, a1).", tests: [{ text: "FF", shouldMatch: true }, { text: "00", shouldMatch: true }, { text: "a1", shouldMatch: true }, { text: "FG", shouldMatch: false }] },
+            { category: "Text", title: "Words Ending in 'ing'", desc: "Match any word that ends with 'ing'.", tests: [{ text: "coding", shouldMatch: true }, { text: "running", shouldMatch: true }, { text: "inner", shouldMatch: false }] },
+            { category: "Data", title: "Canadian Postal Codes", desc: "Format: A1B 2C3.", tests: [{ text: "K1A 0B1", shouldMatch: true }, { text: "M5H 2N2", shouldMatch: true }, { text: "1A1 1A1", shouldMatch: false }] },
+            { category: "Coding", title: "Markdown Links", desc: "Format [text](url).", tests: [{ text: "[Google](https://google.com)", shouldMatch: true }, { text: "[Click here](page.html)", shouldMatch: true }, { text: "![Image](img.jpg)", shouldMatch: true }] },
+            { category: "Text", title: "Quoted Strings", desc: "Text inside double quotes.", tests: [{ text: '"Hello World"', shouldMatch: true }, { text: '""', shouldMatch: true }, { text: '"Unclosed', shouldMatch: false }] },
+            { category: "Data", title: "Coordinates", desc: "Simple Latitude/Longitude '45.12, -120.33'.", tests: [{ text: "45.12, -120.33", shouldMatch: true }, { text: "-90, 180", shouldMatch: true }, { text: "abc, def", shouldMatch: false }] },
+            { category: "Coding", title: "Python Comments", desc: "Lines starting with #.", tests: [{ text: "# This is a comment", shouldMatch: true }, { text: "print(1) # hidden", shouldMatch: true }, { text: "// JS", shouldMatch: false }] },
+            { category: "Web", title: "Secure URLs", desc: "Starts with https://.", tests: [{ text: "https://google.com", shouldMatch: true }, { text: "http://insecure.com", shouldMatch: false }] },
+            { category: "Data", title: "Version Numbers", desc: "SemVer 1.0.0 or 2.4.12.", tests: [{ text: "1.0.0", shouldMatch: true }, { text: "12.4.20", shouldMatch: true }, { text: "v1.0", shouldMatch: false }] },
+            { category: "Text", title: "Capitalized Words", desc: "Words starting with uppercase.", tests: [{ text: "Apple", shouldMatch: true }, { text: "London", shouldMatch: true }, { text: "cat", shouldMatch: false }] },
+            { category: "Finance", title: "Euro Amounts", desc: "100,00€ or 5€.", tests: [{ text: "100,00€", shouldMatch: true }, { text: "5€", shouldMatch: true }, { text: "€5", shouldMatch: false }] },
+            { category: "Data", title: "ISBN-10", desc: "10 digits, sometimes X.", tests: [{ text: "0471958697", shouldMatch: true }, { text: "012345678X", shouldMatch: true }, { text: "123", shouldMatch: false }] },
+            { category: "Coding", title: "SQL Keywords", desc: "SELECT, FROM, or WHERE (case-insensitive).", tests: [{ text: "SELECT", shouldMatch: true }, { text: "from", shouldMatch: true }, { text: "Where", shouldMatch: true }] },
+            { category: "Text", title: "Vowel-only words", desc: "Words with aeiou only.", tests: [{ text: "aa", shouldMatch: true }, { text: "queue", shouldMatch: true }, { text: "sky", shouldMatch: false }] },
+            { category: "Web", title: "Port Numbers", desc: "Match : followed by 1-5 digits.", tests: [{ text: ":8080", shouldMatch: true }, { text: ":443", shouldMatch: true }, { text: "8080", shouldMatch: false }] },
+            { category: "Data", title: "Military Time", desc: "4 digits without colon (0000 to 2359).", tests: [{ text: "1300", shouldMatch: true }, { text: "0900", shouldMatch: true }, { text: "2400", shouldMatch: false }, { text: "800", shouldMatch: false }] },
+            { category: "Coding", title: "Camel Case", desc: "camelCase or thisIsAVar.", tests: [{ text: "camelCase", shouldMatch: true }, { text: "myVariable", shouldMatch: true }, { text: "Snake_Case", shouldMatch: false }] },
+            { category: "Coding", title: "Snake Case", desc: "snake_case or data_fetch_2.", tests: [{ text: "snake_case", shouldMatch: true }, { text: "user_id", shouldMatch: true }, { text: "camelCase", shouldMatch: false }] },
+            { category: "Text", title: "Number Range 1-10", desc: "Single digits 1-9 and 10.", tests: [{ text: "5", shouldMatch: true }, { text: "10", shouldMatch: true }, { text: "0", shouldMatch: false }] },
+            { category: "Data", title: "Month Names", desc: "Full names (January...).", tests: [{ text: "January", shouldMatch: true }, { text: "March", shouldMatch: true }, { text: "Jan", shouldMatch: false }] },
+            { category: "Coding", title: "JS Template Lit", desc: "${variable} syntax.", tests: [{ text: "${name}", shouldMatch: true }, { text: "${user.id}", shouldMatch: true }, { text: "$name", shouldMatch: false }] },
+            { category: "Text", title: "Consecutive Vowels", desc: "3+ vowels in a row.", tests: [{ text: "queue", shouldMatch: true }, { text: "beautiful", shouldMatch: true }, { text: "mood", shouldMatch: false }] },
+            { category: "Web", title: "FTP Links", desc: "ftp:// or sftp://.", tests: [{ text: "ftp://files.com", shouldMatch: true }, { text: "sftp://secure.io", shouldMatch: true }, { text: "http://site.com", shouldMatch: false }] },
+            { category: "Coding", title: "Markdown Bold", desc: "**double asterisks**.", tests: [{ text: "**bold**", shouldMatch: true }, { text: "**very bold**", shouldMatch: true }, { text: "*italic*", shouldMatch: false }] },
+            { category: "Data", title: "US Zip Codes", desc: "12345 or 12345-6789.", tests: [{ text: "90210", shouldMatch: true }, { text: "12345-6789", shouldMatch: true }, { text: "1234", shouldMatch: false }] },
+            { category: "Text", title: "Whitespace", desc: "Only whitespace.", tests: [{ text: "   ", shouldMatch: true }, { text: "\t\n", shouldMatch: true }, { text: " a ", shouldMatch: false }] },
+            { category: "Coding", title: "Trailing Commas", desc: "Comma followed by closing bracket (', ]').", tests: [{ text: ", ]", shouldMatch: true }, { text: ",}", shouldMatch: true }, { text: ", 1", shouldMatch: false }] },
+            { category: "Science", title: "DNA Sequence", desc: "A, C, G, T only.", tests: [{ text: "ATGC", shouldMatch: true }, { text: "GGATCC", shouldMatch: true }, { text: "ATGX", shouldMatch: false }] },
+            { category: "Text", title: "S...E Words", desc: "Starts with 'S' ends with 'E'.", tests: [{ text: "state", shouldMatch: true }, { text: "smile", shouldMatch: true }, { text: "start", shouldMatch: false }] },
+
+            // --- ADVANCED ADDITIONS (100 MORE) ---
+            { category: "Auth", title: "Strong Passwords", desc: "8+ chars, 1 upper, 1 lower, 1 digit, 1 special.", tests: [{ text: "P@ssw0rd123", shouldMatch: true }, { text: "password", shouldMatch: false }, { text: "12345678", shouldMatch: false }, { text: "Admin@12", shouldMatch: true }] },
+            { category: "Web", title: "Strict IPv4", desc: "Only valid 0-255 octets (prevents 256.0.0.0).", tests: [{ text: "127.0.0.1", shouldMatch: true }, { text: "255.255.255.255", shouldMatch: true }, { text: "256.0.0.0", shouldMatch: false }, { text: "1.1.1.256", shouldMatch: false }] },
+            { category: "Web", title: "IPv6 Format", desc: "Match standard 8-group hex IPv6 addresses.", tests: [{ text: "2001:0db8:85a3:0000:0000:8a2e:0370:7334", shouldMatch: true }, { text: "fe80::1", shouldMatch: false }, { text: "127.0.0.1", shouldMatch: false }] },
+            { category: "Coding", title: "JWT Structure", desc: "Three base64 segments separated by dots.", tests: [{ text: "eyJhbGci.eyJzdWIi.SflKxwR", shouldMatch: true }, { text: "abc.def.ghi", shouldMatch: true }, { text: "abc.def", shouldMatch: false }] },
+            { category: "Networking", title: "CIDR Notation", desc: "IP followed by / and 1-2 digits (0-32).", tests: [{ text: "192.168.0.0/24", shouldMatch: true }, { text: "10.0.0.1/8", shouldMatch: true }, { text: "8.8.8.8/33", shouldMatch: false }, { text: "1.1.1.1", shouldMatch: false }] },
+            { category: "Finance", title: "IBAN", desc: "Starts with 2 letters, then 2 digits, then up to 30 alphanumeric.", tests: [{ text: "DE1234567890", shouldMatch: true }, { text: "GB29NWBK60161331926819", shouldMatch: true }, { text: "12DE...", shouldMatch: false }] },
+            { category: "Coding", title: "Multiline Comments", desc: "C-style block comments /* ... */.", tests: [{ text: "/* hello */", shouldMatch: true }, { text: "/*\n multiline \n*/", shouldMatch: true }, { text: "// single", shouldMatch: false }] },
+            { category: "Data", title: "ISO 8601 Timestamp", desc: "YYYY-MM-DDTHH:MM:SSZ format.", tests: [{ text: "2023-10-27T10:30:00Z", shouldMatch: true }, { text: "2023-10-27", shouldMatch: false }, { text: "10:30:00", shouldMatch: false }] },
+            { category: "Science", title: "Scientific Notation", desc: "Format like 6.022e23 or -1.5E-10.", tests: [{ text: "6.022e23", shouldMatch: true }, { text: "-1.5E-10", shouldMatch: true }, { text: "100", shouldMatch: false }, { text: "1.2e", shouldMatch: false }] },
+            { category: "Security", title: "API Keys", desc: "String of 32-40 hex characters.", tests: [{ text: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6", shouldMatch: false }, { text: "550e8400e29b41d4a716446655440000", shouldMatch: true }, { text: "ABC-123", shouldMatch: false }] },
+            { category: "Linguistics", title: "Lookahead: No 'q' without 'u'", desc: "Match words containing 'q' ONLY if followed by 'u'.", tests: [{ text: "quiet", shouldMatch: true }, { text: "iraq", shouldMatch: false }, { text: "qatar", shouldMatch: false }, { text: "queen", shouldMatch: true }] },
+            { category: "Coding", title: "CSS ID Selectors", desc: "Starts with #, alphanumeric, cannot start with digit.", tests: [{ text: "#main-content", shouldMatch: true }, { text: "#header123", shouldMatch: true }, { text: "#123header", shouldMatch: false }, { text: ".class", shouldMatch: false }] },
+            { category: "Data", title: "Cron Expressions", desc: "5 space-separated segments (e.g., '* * * * *').", tests: [{ text: "* * * * *", shouldMatch: true }, { text: "0 22 * * 1-5", shouldMatch: true }, { text: "* * * *", shouldMatch: false }] },
+            { category: "Web", title: "Cookie Strings", desc: "Key=Value pairs separated by ;.", tests: [{ text: "theme=dark; user=john", shouldMatch: true }, { text: "session_id=123", shouldMatch: true }, { text: "invalid cookie", shouldMatch: false }] },
+            { category: "Coding", title: "Backreference: Same Tags", desc: "Match <tag>content</tag> where opening and closing tags match.", tests: [{ text: "<b>bold</b>", shouldMatch: true }, { text: "<i>italic</i>", shouldMatch: true }, { text: "<b>wrong</i>", shouldMatch: false }] },
+            { category: "Text", title: "Negative Lookahead: Not 'cat'", desc: "Match strings that do NOT contain the word 'cat'.", tests: [{ text: "dog", shouldMatch: true }, { text: "category", shouldMatch: false }, { text: "my cat", shouldMatch: false }, { text: "mouse", shouldMatch: true }] },
+            { category: "Finance", title: "Credit Card Masking", desc: "Match 12 digits followed by 4 visible digits.", tests: [{ text: "************1234", shouldMatch: true }, { text: "1234567812345678", shouldMatch: false }, { text: "****1234", shouldMatch: false }] },
+            { category: "Linguistics", title: "Lookbehind: '$' Price", desc: "Match digits only if preceded by a '$'.", tests: [{ text: "$100", shouldMatch: true }, { text: "100", shouldMatch: false }, { text: "€100", shouldMatch: false }] },
+            { category: "Web", title: "URL Query Params", desc: "Match '?key=val&key2=val2' part of a URL.", tests: [{ text: "?id=1&name=test", shouldMatch: true }, { text: "?search=regex", shouldMatch: true }, { text: "index.html", shouldMatch: false }] },
+            { category: "Coding", title: "C# Properties", desc: "Match 'public string Name { get; set; }' pattern.", tests: [{ text: "public int Id { get; set; }", shouldMatch: true }, { text: "private string _name;", shouldMatch: false }] },
+            { category: "Math", title: "Binary Strings", desc: "Only 0s and 1s.", tests: [{ text: "101010", shouldMatch: true }, { text: "000", shouldMatch: true }, { text: "102", shouldMatch: false }] },
+            { category: "Security", title: "SHA-256 Hash", desc: "Exactly 64 hex characters.", tests: [{ text: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", shouldMatch: true }, { text: "abc", shouldMatch: false }] },
+            { category: "Text", title: "Title Case", desc: "Words where ONLY the first letter is capitalized.", tests: [{ text: "Apple", shouldMatch: true }, { text: "APPLE", shouldMatch: false }, { text: "aPPLE", shouldMatch: false }] },
+            { category: "Web", title: "HTML Attributes", desc: "Match key=\"value\" pairs.", tests: [{ text: 'class="btn"', shouldMatch: true }, { text: 'href="index.php"', shouldMatch: true }, { text: 'disabled', shouldMatch: false }] },
+            { category: "Data", title: "Excel Cell Ref", desc: "A1, B12, Z100 format.", tests: [{ text: "A1", shouldMatch: true }, { text: "Z99", shouldMatch: true }, { text: "1A", shouldMatch: false }, { text: "AA10", shouldMatch: true }] },
+            { category: "Coding", title: "JS Import Statements", desc: "Match 'import { x } from \"y\"'.", tests: [{ text: 'import { App } from "./App"', shouldMatch: true }, { text: 'const App = 1', shouldMatch: false }] },
+            { category: "Linguistics", title: "Palindromic digits (3-len)", desc: "Match 3 digits where 1st and 3rd are same (e.g. 121).", tests: [{ text: "121", shouldMatch: true }, { text: "909", shouldMatch: true }, { text: "123", shouldMatch: false }] },
+            { category: "Data", title: "EAN-13 Barcode", desc: "13 digits exactly.", tests: [{ text: "4006381333931", shouldMatch: true }, { text: "1234567890123", shouldMatch: true }, { text: "123", shouldMatch: false }] },
+            { category: "Text", title: "Repeated Chars", desc: "Match any character that appears 3+ times in a row.", tests: [{ text: "aaa", shouldMatch: true }, { text: "hellooo", shouldMatch: true }, { text: "apple", shouldMatch: false }] },
+            { category: "Coding", title: "YAML Keys", desc: "Starts line, ends with :, followed by space.", tests: [{ text: "name: ", shouldMatch: true }, { text: "  version: ", shouldMatch: true }, { text: "key:", shouldMatch: false }] },
+            { category: "Math", title: "Hexadecimal Literals", desc: "0x followed by hex digits.", tests: [{ text: "0x1A2B", shouldMatch: true }, { text: "0xFF", shouldMatch: true }, { text: "123", shouldMatch: false }] },
+            { category: "Web", title: "MIME Types", desc: "type/subtype format.", tests: [{ text: "application/json", shouldMatch: true }, { text: "text/html", shouldMatch: true }, { text: "json", shouldMatch: false }] },
+            { category: "Data", title: "Credit Card Expiry", desc: "MM/YY format.", tests: [{ text: "12/25", shouldMatch: true }, { text: "01/99", shouldMatch: true }, { text: "13/20", shouldMatch: false }] },
+            { category: "Coding", title: "GitHub Repo URL", desc: "github.com/user/repo format.", tests: [{ text: "github.com/facebook/react", shouldMatch: true }, { text: "google.com", shouldMatch: false }] },
+            { category: "Security", title: "Linux Permissions", desc: "rwxr-xr-x format (9 chars).", tests: [{ text: "rwxrwxrwx", shouldMatch: true }, { text: "rw-r--r--", shouldMatch: true }, { text: "755", shouldMatch: false }] },
+            { category: "Text", title: "Acronyms", desc: "3+ consecutive uppercase letters.", tests: [{ text: "NASA", shouldMatch: true }, { text: "HTML", shouldMatch: true }, { text: "No", shouldMatch: false }] },
+            { category: "Math", title: "Percentage Values", desc: "Digits followed by %.", tests: [{ text: "99%", shouldMatch: true }, { text: "0.5%", shouldMatch: true }, { text: "100", shouldMatch: false }] },
+            { category: "Coding", title: "JSON Strings", desc: "Text inside double quotes with escapes.", tests: [{ text: '"value"', shouldMatch: true }, { text: '"with \\"quote\\""', shouldMatch: true }] },
+            { category: "Web", title: "HSTS Header", desc: "max-age=...; includeSubDomains.", tests: [{ text: "max-age=31536000; includeSubDomains", shouldMatch: true }, { text: "none", shouldMatch: false }] },
+            { category: "Data", title: "Danish Phone", desc: "8 digits, sometimes with spaces (XX XX XX XX).", tests: [{ text: "12345678", shouldMatch: true }, { text: "12 34 56 78", shouldMatch: true }, { text: "123", shouldMatch: false }] },
+            { category: "Linguistics", title: "Lookbehind: Not 'no'", desc: "Match 'yes' only if NOT preceded by 'no '.", tests: [{ text: "yes", shouldMatch: true }, { text: "no yes", shouldMatch: false }] },
+            { category: "Coding", title: "Python f-strings", desc: "f\"... {var} ...\" pattern.", tests: [{ text: 'f"Hello {name}"', shouldMatch: true }, { text: '"Hello"', shouldMatch: false }] },
+            { category: "Security", title: "Private SSH Key", desc: "-----BEGIN RSA PRIVATE KEY----- line.", tests: [{ text: "-----BEGIN RSA PRIVATE KEY-----", shouldMatch: true }, { text: "not a key", shouldMatch: false }] },
+            { category: "Data", title: "Vehicle VIN", desc: "17 alphanumeric characters.", tests: [{ text: "1HGCM82633A004352", shouldMatch: true }, { text: "ABC", shouldMatch: false }] },
+            { category: "Math", title: "Octal Literals", desc: "Leading 0 followed by 0-7 digits.", tests: [{ text: "0755", shouldMatch: true }, { text: "0123", shouldMatch: true }, { text: "089", shouldMatch: false }] },
+            { category: "Coding", title: "Java Main Method", desc: "Match 'public static void main' signature.", tests: [{ text: "public static void main(String[] args)", shouldMatch: true }, { text: "void test()", shouldMatch: false }] },
+            { category: "Web", title: "ETag Header", desc: "W/\"hash\" or \"hash\".", tests: [{ text: 'W/"12345"', shouldMatch: true }, { text: '"abc"', shouldMatch: true }] },
+            { category: "Text", title: "Emoji Detection", desc: "Match common smiley emojis like :) or :-).", tests: [{ text: ":)", shouldMatch: true }, { text: ":-D", shouldMatch: true }, { text: ":(", shouldMatch: true }] },
+            { category: "Coding", title: "Git Commit Hash", desc: "40 character hex string.", tests: [{ text: "7f8e9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f", shouldMatch: true }, { text: "short", shouldMatch: false }] },
+            { category: "Web", title: "Content-Type", desc: "Match charset=UTF-8 part.", tests: [{ text: "charset=UTF-8", shouldMatch: true }, { text: "UTF-8", shouldMatch: false }] },
+            { category: "Data", title: "Swiss IBAN", desc: "CH followed by 19 digits.", tests: [{ text: "CH1200000000000000001", shouldMatch: true }, { text: "DE123", shouldMatch: false }] },
+            { category: "Coding", title: "PHP Variable", desc: "$ followed by letter/_, then alphanumeric.", tests: [{ text: "$var", shouldMatch: true }, { text: "$_123", shouldMatch: true }, { text: "$123", shouldMatch: false }] },
+            { category: "Text", title: "Negative Lookbehind: No '$'", desc: "Match digits NOT preceded by '$'.", tests: [{ text: "100", shouldMatch: true }, { text: "$100", shouldMatch: false }] },
+            { category: "Data", title: "Roman Numerals", desc: "I, V, X, L, C, D, M combination.", tests: [{ text: "XXIV", shouldMatch: true }, { text: "MMXXIII", shouldMatch: true }, { text: "ABC", shouldMatch: false }] },
+            { category: "Coding", title: "SQL SELECT", desc: "Match 'SELECT * FROM table'.", tests: [{ text: "SELECT * FROM users", shouldMatch: true }, { text: "DROP TABLE users", shouldMatch: false }] },
+            { category: "Security", title: "Password: No Spaces", desc: "Any string without spaces, min 6 chars.", tests: [{ text: "secure123", shouldMatch: true }, { text: "not secure", shouldMatch: false }] },
+            { category: "Linguistics", title: "Suffix '-ly'", desc: "Match words ending in 'ly' (adverbs).", tests: [{ text: "quickly", shouldMatch: true }, { text: "fly", shouldMatch: false }, { text: "happily", shouldMatch: true }] },
+            { category: "Web", title: "CORS Allow-Origin", desc: "Access-Control-Allow-Origin: *.", tests: [{ text: "Access-Control-Allow-Origin: *", shouldMatch: true }, { text: "Allow: *", shouldMatch: false }] },
+            { category: "Math", title: "Simple Math Expr", desc: "Digits separated by + or -.", tests: [{ text: "1+2-3", shouldMatch: true }, { text: "100-50", shouldMatch: true }, { text: "1*2", shouldMatch: false }] },
+            { category: "Coding", title: "CSS Colors (rgb)", desc: "rgb(0,0,0) format.", tests: [{ text: "rgb(255, 255, 255)", shouldMatch: true }, { text: "rgb(0,0,0)", shouldMatch: true }, { text: "hsl(0,0,0)", shouldMatch: false }] },
+            { category: "Web", title: "User Agent", desc: "Match 'Mozilla/5.0' part.", tests: [{ text: "Mozilla/5.0", shouldMatch: true }, { text: "Chrome/90", shouldMatch: true }] },
+            { category: "Data", title: "UK Postcode", desc: "SW1A 1AA format.", tests: [{ text: "SW1A 1AA", shouldMatch: true }, { text: "M1 1AE", shouldMatch: true }, { text: "12345", shouldMatch: false }] },
+            { category: "Security", title: "MD5 Hash", desc: "Exactly 32 hex characters.", tests: [{ text: "5d41402abc4b2a76b9719d911017c592", shouldMatch: true }, { text: "abc", shouldMatch: false }] },
+            { category: "Coding", title: "Markdown Checklist", desc: "- [ ] or - [x].", tests: [{ text: "- [ ] task", shouldMatch: true }, { text: "- [x] done", shouldMatch: true }, { text: "* [ ]", shouldMatch: false }] },
+            { category: "Text", title: "Brackets Content", desc: "Text inside (parentheses).", tests: [{ text: "(hello)", shouldMatch: true }, { text: "()", shouldMatch: true }, { text: "(no closing", shouldMatch: false }] },
+            { category: "Data", title: "Credit Card CVV", desc: "3 or 4 digits.", tests: [{ text: "123", shouldMatch: true }, { text: "1234", shouldMatch: true }, { text: "12", shouldMatch: false }] },
+            { category: "Web", title: "Favicon Path", desc: "/favicon.ico or /favicon.png.", tests: [{ text: "/favicon.ico", shouldMatch: true }, { text: "/favicon.png", shouldMatch: true }, { text: "img.jpg", shouldMatch: false }] },
+            { category: "Coding", title: "Bash Shebang", desc: "#!/bin/bash or #!/usr/bin/env python.", tests: [{ text: "#!/bin/bash", shouldMatch: true }, { text: "#!/usr/bin/python3", shouldMatch: true }, { text: "# comment", shouldMatch: false }] },
+            { category: "Security", title: "JWT Header", desc: "eyJ... base64 start.", tests: [{ text: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9", shouldMatch: true }, { text: "abc", shouldMatch: false }] },
+            { category: "Text", title: "Two Words", desc: "Exactly two words separated by a space.", tests: [{ text: "Hello World", shouldMatch: true }, { text: "One", shouldMatch: false }, { text: "Too many words here", shouldMatch: false }] },
+            { category: "Data", title: "Flight Number", desc: "2 letters followed by 1-4 digits.", tests: [{ text: "BA123", shouldMatch: true }, { text: "UA1", shouldMatch: true }, { text: "123BA", shouldMatch: false }] },
+            { category: "Coding", title: "Vim Commands", desc: "Match :wq or :q!.", tests: [{ text: ":wq", shouldMatch: true }, { text: ":q!", shouldMatch: true }, { text: "exit", shouldMatch: false }] },
+            { category: "Web", title: "JSONP Callback", desc: "callback_123(data).", tests: [{ text: "myCallback({JSON})", shouldMatch: true }, { text: "func()", shouldMatch: true }] },
+            { category: "Security", title: "AWS Access Key", desc: "20 uppercase alphanumeric chars.", tests: [{ text: "AKIAIOSFODNN7EXAMPLE", shouldMatch: true }, { text: "short", shouldMatch: false }] },
+            { category: "Text", title: "Word Boundaries", desc: "Match 'cat' as a full word (not 'category').", tests: [{ text: "a cat sat", shouldMatch: true }, { text: "category", shouldMatch: false }] },
+            { category: "Math", title: "Prime? No", desc: "Match non-prime number of '1's (composite).", tests: [{ text: "1111", shouldMatch: true }, { text: "111111", shouldMatch: true }, { text: "111", shouldMatch: false }] },
+            { category: "Coding", title: "JS Arrow Function", desc: "() => {}.", tests: [{ text: "() => {}", shouldMatch: true }, { text: "e => e", shouldMatch: true }, { text: "function()", shouldMatch: false }] },
+            { category: "Web", title: "GraphQL Query", desc: "query { ... } format.", tests: [{ text: "query { user { id } }", shouldMatch: true }, { text: "mutation { ... }", shouldMatch: true }] },
+            { category: "Data", title: "US Currency", desc: "$1,234.56 format.", tests: [{ text: "$1,000.00", shouldMatch: true }, { text: "$12.00", shouldMatch: true }, { text: "1000", shouldMatch: false }] },
+            { category: "Coding", title: "Docker Image", desc: "name:tag format.", tests: [{ text: "nginx:latest", shouldMatch: true }, { text: "python:3.8-slim", shouldMatch: true }, { text: "ubuntu", shouldMatch: false }] },
+            { category: "Security", title: "API Endpoint", desc: "/api/v1/resource.", tests: [{ text: "/api/v1/users", shouldMatch: true }, { text: "/v2/auth", shouldMatch: true }] },
+            { category: "Text", title: "Phone with Country", desc: "+1-555-123-4567.", tests: [{ text: "+1-800-555-0199", shouldMatch: true }, { text: "555-0199", shouldMatch: false }] },
+            { category: "Coding", title: "CSS !important", desc: "Match '!important' tag.", tests: [{ text: "!important", shouldMatch: true }, { text: "important", shouldMatch: false }] },
+            { category: "Data", title: "PascalCase", desc: "WordsLikeThis.", tests: [{ text: "PascalCase", shouldMatch: true }, { text: "AppContainer", shouldMatch: true }, { text: "camelCase", shouldMatch: false }] },
+            { category: "Web", title: "X-Forwarded-For", desc: "List of IPs.", tests: [{ text: "192.168.1.1, 10.0.0.1", shouldMatch: true }, { text: "8.8.8.8", shouldMatch: true }] },
+            { category: "Security", title: "CSRF Token", desc: "Long random hex/base64.", tests: [{ text: "aZ1bX2cY3dV4", shouldMatch: true }, { text: "token", shouldMatch: false }] },
+            { category: "Text", title: "Date: DD.MM.YYYY", desc: "European format.", tests: [{ text: "31.12.2023", shouldMatch: true }, { text: "01.01.2000", shouldMatch: true }, { text: "2023.12.31", shouldMatch: false }] },
+            { category: "Coding", title: "HTML Entity", desc: "&amp; or &#123;.", tests: [{ text: "&nbsp;", shouldMatch: true }, { text: "&#x27;", shouldMatch: true }, { text: "&abc", shouldMatch: false }] },
+            { category: "Data", title: "Bank Sort Code", desc: "XX-XX-XX digits.", tests: [{ text: "12-34-56", shouldMatch: true }, { text: "123456", shouldMatch: false }] },
+            { category: "Math", title: "Negative Float", desc: "-123.456.", tests: [{ text: "-0.5", shouldMatch: true }, { text: "-100.123", shouldMatch: true }, { text: "10.0", shouldMatch: false }] },
+            { category: "Coding", title: "React Component", desc: "Starts with < followed by Uppercase.", tests: [{ text: "<App />", shouldMatch: true }, { text: "<Layout>", shouldMatch: true }, { text: "<div>", shouldMatch: false }] },
+            { category: "Web", title: "Wget Command", desc: "wget http://... -O file.", tests: [{ text: "wget http://site.com", shouldMatch: true }, { text: "curl -O", shouldMatch: false }] },
+            { category: "Security", title: "Safe File Path", desc: "No .. traversal allowed.", tests: [{ text: "/var/log", shouldMatch: true }, { text: "../../etc/passwd", shouldMatch: false }] },
+            { category: "Data", title: "MAC with Hyphens", desc: "XX-XX-XX-XX-XX-XX.", tests: [{ text: "00-14-22-01-23-45", shouldMatch: true }, { text: "00:14", shouldMatch: false }] },
+            { category: "Coding", title: "Log Level", desc: "INFO, WARN, ERROR, DEBUG.", tests: [{ text: "[ERROR]", shouldMatch: true }, { text: "DEBUG:", shouldMatch: true }, { text: "LOG", shouldMatch: false }] },
+            { category: "Text", title: "Currency Symbols", desc: "$, €, £, ¥.", tests: [{ text: "$", shouldMatch: true }, { text: "€", shouldMatch: true }, { text: "A", shouldMatch: false }] },
+            { category: "Web", title: "Cache-Control", desc: "public, max-age=... or no-cache.", tests: [{ text: "no-cache", shouldMatch: true }, { text: "public, max-age=3600", shouldMatch: true }] },
+            { category: "Coding", title: "Python List", desc: "[1, 2, 3] format.", tests: [{ text: "[1, 2]", shouldMatch: true }, { text: "['a', 'b']", shouldMatch: true }, { text: "{1,2}", shouldMatch: false }] },
+            { category: "Data", title: "Color Name", desc: "Red, Blue, Green (Simple list).", tests: [{ text: "Red", shouldMatch: true }, { text: "Yellow", shouldMatch: true }, { text: "Apple", shouldMatch: false }] },
+            { category: "Text", title: "Final Word", desc: "Match the very last word of a sentence.", tests: [{ text: "End.", shouldMatch: true }, { text: "This is the end", shouldMatch: true }] }
+        ];
+
+        let currentChallenge = null;
+
+        function loadNewChallenge() {
+            // Reset UI
+            document.getElementById('regex-input').value = "";
+            document.getElementById('success-message').classList.add('hidden');
+            document.getElementById('error-display').classList.add('hidden');
+            document.getElementById('status-badge').innerText = "Incomplete";
+            document.getElementById('status-badge').className = "text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300";
+
+            // Select random challenge
+            let newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * challenges.length);
+            } while (challenges.length > 1 && challenges[newIndex] === currentChallenge);
+            
+            currentChallenge = challenges[newIndex];
+
+            // Update DOM
+            document.getElementById('challenge-title').innerText = currentChallenge.title;
+            document.getElementById('challenge-desc').innerText = currentChallenge.desc;
+            document.getElementById('challenge-category').innerText = currentChallenge.category;
+            
+            const container = document.getElementById('test-container');
+            container.innerHTML = "";
+            
+            currentChallenge.tests.forEach((test, idx) => {
+                const div = document.createElement('div');
+                div.className = "p-4 mono text-sm flex justify-between items-center group";
+                div.innerHTML = `
+                    <div id="test-text-${idx}" class="break-all text-slate-300">${test.text}</div>
+                    <div class="flex items-center space-x-3 shrink-0">
+                        <span class="text-[10px] uppercase font-bold text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                            ${test.shouldMatch ? 'Match' : 'No Match'}
+                        </span>
+                        <div id="indicator-${idx}" class="w-2 h-2 rounded-full bg-slate-700"></div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function evaluateRegex() {
+            const pattern = document.getElementById('regex-input').value;
+            const errorDisplay = document.getElementById('error-display');
+            
+            if (!pattern) {
+                renderMatches(null);
+                return;
+            }
+
+            try {
+                const regex = new RegExp(pattern, 'g');
+                errorDisplay.classList.add('hidden');
+                renderMatches(regex);
+            } catch (e) {
+                errorDisplay.innerText = e.message;
+                errorDisplay.classList.remove('hidden');
+                renderMatches(null);
+            }
+        }
+
+        function renderMatches(regex) {
+            let allPassed = true;
+            
+            currentChallenge.tests.forEach((test, idx) => {
+                const textEl = document.getElementById(`test-text-${idx}`);
+                const indicator = document.getElementById(`indicator-${idx}`);
+                
+                if (!regex) {
+                    textEl.innerText = test.text;
+                    indicator.className = "w-2 h-2 rounded-full bg-slate-700";
+                    allPassed = false;
+                    return;
+                }
+
+                // Match execution
+                let matches;
+                try {
+                    matches = [...test.text.matchAll(regex)];
+                } catch(e) {
+                    matches = [];
+                }
+                
+                const hasMatch = matches.length > 0;
+                const isCorrect = hasMatch === test.shouldMatch;
+
+                if (!isCorrect) allPassed = false;
+
+                // Highlight text
+                let highlighted = "";
+                let lastIndex = 0;
+                
+                matches.forEach(match => {
+                    if (match[0].length === 0) return; 
+
+                    highlighted += escapeHtml(test.text.substring(lastIndex, match.index));
+                    highlighted += `<span class="highlight-match">${escapeHtml(match[0])}</span>`;
+                    lastIndex = match.index + match[0].length;
+                });
+                highlighted += escapeHtml(test.text.substring(lastIndex));
+                
+                textEl.innerHTML = highlighted || escapeHtml(test.text);
+                
+                // Update indicator
+                if (isCorrect) {
+                    indicator.className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]";
+                } else {
+                    indicator.className = "w-2 h-2 rounded-full bg-red-500";
+                }
+            });
+
+            const inputVal = document.getElementById('regex-input').value.trim();
+            if (allPassed && inputVal.length > 0) {
+                document.getElementById('success-message').classList.remove('hidden');
+                document.getElementById('status-badge').innerText = "Completed";
+                document.getElementById('status-badge').className = "text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30";
+            } else {
+                document.getElementById('success-message').classList.add('hidden');
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        window.onload = loadNewChallenge;
+    </script>
+</body>
+</html>
